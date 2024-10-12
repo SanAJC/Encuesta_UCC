@@ -12,24 +12,26 @@ const Form = () => {
     message_1: "",
     message_2: "",
   });
-  const [documentenviado, setDocumentenviado] = useState(false);
+  const [documentEnviado, setDocumentEnviado] = useState(false);
   const [loading, setLoading] = useState(true);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [emailError, setEmailError] = useState("");
+  const [idError, setIdError] = useState("");
   const navigate = useNavigate();
   const user = auth.currentUser;
 
   useEffect(() => {
-    // Verificar si el usuario ya ha enviado el formulario
-    const ComprobarEnvio = async () => {
+    const comprobarEnvio = async () => {
       if (user) {
         const userRef = doc(db, "Encuesta", user.uid);
         const docSnap = await getDoc(userRef);
         if (docSnap.exists()) {
-          setDocumentenviado(true); // Si el documento existe, el usuario ya envió el formulario
+          setDocumentEnviado(true);
         }
       }
-      setLoading(false); // Deja de mostrar el loading cuando se termina la verificación
+      setLoading(false);
     };
-    ComprobarEnvio();
+    comprobarEnvio();
   }, [user]);
 
   const handleChange = (e) => {
@@ -42,9 +44,25 @@ const Form = () => {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+
+    // Limpiar mensajes de error
+    setEmailError("");
+    setIdError("");
+
+    if (!formData.email.endsWith("@campusucc.edu.co")) {
+      setEmailError("El correo debe terminar en @campusucc.edu.co");
+      return;
+    }
+
+    if (formData.id.length > 6) {
+      setIdError("El ID no puede tener más de 6 caracteres");
+      return;
+    }
+
     if (!user) return;
 
-    // Guardar los datos del formulario en Firestore
+    setIsSubmitting(true);
+
     const userRef = doc(db, "Encuesta", user.uid);
     await setDoc(userRef, {
       id: formData.id,
@@ -67,13 +85,11 @@ const Form = () => {
       });
   };
 
-  // Mostrar el spinner de carga mientras se verifica si el usuario ha enviado el formulario
   if (loading) {
     return <LoadingSpinner />;
   }
 
-  // Mostrar el mensaje de agradecimiento si ya envió el formulario
-  if (documentenviado) {
+  if (documentEnviado) {
     return (
       <div className="min-h-screen flex items-center justify-center p-4">
         <div className="w-full max-w-md bg-white rounded-3xl shadow-2xl overflow-hidden text-center p-8 space-y-6">
@@ -145,14 +161,20 @@ const Form = () => {
               </label>
               <input
                 id="student-id"
-                name="id" // Asegúrate de que el nombre sea correcto
-                type="text"
+                name="id"
+                type="number"
                 required
-                className="rounded-full border-[#8CC63F] border w-full p-2"
-                value={formData.id} // Cambiado a formData.id
-                onChange={handleChange} // Cambiado para usar handleChange
+                className={`rounded-full border ${
+                  idError ? "border-red-500" : "border-[#8CC63F]"
+                } w-full p-2`}
+                value={formData.id}
+                onChange={handleChange}
               />
+              {idError && (
+                <p className="text-red-500 text-sm text-right	">{idError}</p>
+              )}
             </div>
+
             <div className="space-y-2">
               <label
                 htmlFor="institutional-email"
@@ -164,13 +186,19 @@ const Form = () => {
                 id="institutional-email"
                 name="email"
                 type="email"
-                placeholder="tu@ucc.edu.co"
+                placeholder="tu@campusucc.edu.co"
                 required
-                className="rounded-full border-[#8CC63F] border w-full p-2"
+                className={`rounded-full border ${
+                  emailError ? "border-red-500" : "border-[#8CC63F]"
+                } w-full p-2`}
                 value={formData.email}
                 onChange={handleChange}
               />
+              {emailError && (
+                <p className="text-red-500 text-sm text-right	">{emailError}</p>
+              )}
             </div>
+
             <div className="space-y-2">
               <label htmlFor="opinion" className="text-[#8CC63F] font-semibold">
                 Opinión sobre la facultad (Máximo 400 caracteres)
@@ -188,27 +216,37 @@ const Form = () => {
                 {formData.message_1.length}/400 caracteres
               </p>
             </div>
+
             <div className="space-y-2">
               <label
                 htmlFor="solution"
                 className="text-[#8CC63F] font-semibold"
               >
-                ¿Cómo solucionarías el problema en caso de que exista?
+                ¿Cómo solucionarías el problema en caso de que exista? (Máximo
+                400 caracteres)
               </label>
               <textarea
                 id="solution"
                 name="message_2"
                 placeholder="Describe tu solución aquí..."
                 className="rounded-lg border-[#8CC63F] border w-full p-2"
+                maxLength={400}
                 value={formData.message_2}
                 onChange={handleChange}
               />
+              <p className="text-sm text-gray-500 text-right">
+                {formData.message_2.length}/400 caracteres
+              </p>
             </div>
+
             <button
               type="submit"
-              className="w-full rounded-full bg-[#8CC63F] hover:bg-[#7AB52F] transition-colors duration-300 p-2 text-white font-bold"
+              disabled={isSubmitting}
+              className={`w-full py-2 px-6 rounded-full bg-[#8CC63F] hover:bg-[#7AB52F] transition-colors duration-300 text-white font-semibold text-lg ${
+                isSubmitting ? "opacity-50 cursor-not-allowed" : ""
+              }`}
             >
-              Enviar Retroalimentación
+              {isSubmitting ? "Enviando..." : "Enviar Retroalimentación"}
             </button>
           </form>
         </div>

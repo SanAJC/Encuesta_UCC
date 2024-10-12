@@ -41,7 +41,7 @@ const ThankYou = () => {
         <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
           <button
             onClick={handleLogout}
-            className="w-full py-4 px-6 rounded-full bg-[#8CC63F] hover:bg-[#7AB52F] transition-colors duration-300 text-white font-semibold text-lg"
+            className="w-full py-2 px-6 rounded-full bg-[#8CC63F] hover:bg-[#7AB52F] transition-colors duration-300 text-white font-semibold text-lg"
           >
             OK
           </button>
